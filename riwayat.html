@@ -106,7 +106,7 @@
 
         async function loadFilterKelasDinamic() {
             const dropdown = document.getElementById('filterKelas');
-            let { data, error } = await supabase.from('dpt_pemilih').select('kelas');
+            let { data, error } = await supabase.from('dpt_pemilih').select('kelas').limit(2000);
             
             if (error) return;
             const kelasUnik = [...new Set(data.map(item => item.kelas))].sort();
@@ -129,7 +129,8 @@
                 .from('dpt_pemilih')
                 .select('nama_lengkap, kelas, waktu_vote')
                 .eq('status_vote', true)
-                .order('waktu_vote', { ascending: false });
+                .order('waktu_vote', { ascending: false })
+                .limit(2000);
             
             if (error) return tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-red-500 font-bold">Gagal mengambil data</td></tr>`;
             
