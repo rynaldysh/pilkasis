@@ -3,41 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Count Dashboard</title>
-    <!-- Menggunakan Tailwind CSS untuk styling -->
+    <title>Live Count Dashboard (Pie Chart)</title>
+    <!-- Tailwind CSS untuk styling -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js Pustaka Utama -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Plugin Chart.js DataLabels untuk menampilkan persentase di dalam grafik -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Hasil Live Count</h1>
-        <div id="display-realtime" class="space-y-4"></div>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-10 px-4">
+    
+    <!-- Tombol Kembali -->
+    <div class="w-full max-w-4xl mb-4">
+        <a href="index.html" class="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium transition">
+            <span>&larr;</span> Kembali ke Menu Utama
+        </a>
+    </div>
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl">
+        <h1 class="text-3xl font-extrabold mb-2 text-center text-gray-800">📊 Hasil Live Count</h1>
+        <p class="text-center text-gray-500 mb-8">Visualisasi Persentase Suara Real-time</p>
+        
+        <!-- Area Kontainer Grafik Pie (Lebih kecil/persegi dibanding Bar chart) -->
+        <div class="w-full mb-10 flex justify-center h-[400px]">
+            <canvas id="polingChart"></canvas>
+        </div>
+
+        <!-- Rincian Suara & Persentase Detail -->
+        <div class="border-t border-gray-200 pt-6">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">Rincian Perolehan:</h2>
+            <div id="display-realtime" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <p class="text-gray-400 italic">Menyambungkan ke database...</p>
+            </div>
+        </div>
     </div>
 
     <script type="module">
         import { createClient } from 'https://esm.sh/@supabase/supabase-js'
         
-        // Ganti dengan URL dan ANON KEY dari Supabase Anda
-        const supabase = createClient('URL_SUPABASE', 'ANON_KEY')
+        // --- MASUKKAN KREDENSIAL SUPABASE ANDA DI SINI ---
+        const url_anda = 'https://oyiglseqiakqxlfzyiyk.supabase.co'
+        const key_anda = 'PASTE_KODE_PUBLISHABLE_KEY_ANDA_DI_SINI' 
+        const supabase = createClient(url_anda, key_anda)
 
-        async function renderData() {
-            let { data } = await supabase.from('poling').select('*').order('id', { ascending: true })
-            const out = document.getElementById('display-realtime')
-            
-            out.innerHTML = data.map(k => `
-                <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <span class="text-lg font-semibold text-gray-700">${k.pilihan}</span>
-                    <span class="text-2xl font-bold text-blue-600">${k.jumlah_suara} <span class="text-sm font-normal text-gray-500">Suara</span></span>
-                </div>
-            `).join('')
+        // Daftarkan plugin datalabels ke Chart.js
+        Chart.register(ChartDataLabels);
+
+        let chartInstance = null;
+
+        // Fungsi Update Grafik Pie
+        function updateChart(namaKandidat, jumlahSuara, totalSeluruhSuara) {
+            const ctx = document.getElementById('polingChart').getContext('2d');
+
+            const backgroundColors = [
+                'rgba(59, 130, 246, 0.85)', // Biru
+                'rgba(16, 185, 129, 0.85)', // Emerald
+                'rgba(245, 158, 11, 0.85)', // Amber
+                'rgba(239, 68, 68, 0.85)',  // Merah
+                'rgba(139, 92, 246, 0.85)'  // Ungu (Cadangan)
+            ];
+
+            if (!chartInstance) {
+                chartInstance = new Chart(ctx, {
+                    type: 'pie', // Mengubah tipe menjadi Pie
+                    data: {
+                        labels: namaKandidat,
+                        datasets: [{
+                            data: jumlahSuara,
+                            backgroundColor: backgroundColors,
+                            borderWidth: 2,
+                            borderColor: '#ffffff', // Garis putih antar potongan pie
+                            hoverOffset: 10 // Efek membesar saat mouse diarahkan (animasi)
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        // Pengaturan Animasi Bawaan Chart.js
+                        animation: {
+                            animateRotate: true,
+                            animateScale: true,
+                            duration: 800, // Durasi animasi dalam milidetik
+                            easing: 'easeOutQuart'
+                        },
+                        plugins: {
+                            // Legenda keterangan kandidat
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    font: { size: 14, weight: 'bold' }
+                                }
+                            },
+                            // Pengaturan teks persentase di dalam Pie
+                            datalabels: {
+                                color: '#ffffff',
+                                font: { weight: 'bold', size: 16 },
+                                formatter: (value, context) => {
+                                    // Hitung persentase untuk label di dalam pie
+                                    if (totalSeluruhSuara === 0) return '0%';
+                                    let percentage = (value / totalSeluruhSuara * 100).toFixed(1) + "%";
+                                    return percentage;
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.label || '';
+                                        if (label) { label += ': '; }
+                                        let value = context.raw;
+                                        let perc = totalSeluruhSuara === 0 ? 0 : ((value / totalSeluruhSuara) * 100).toFixed(1);
+                                        return `${label}${value} Suara (${perc}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Update data untuk memicu animasi perubahan real-time
+                chartInstance.data.labels = namaKandidat;
+                chartInstance.data.datasets[0].data = jumlahSuara;
+                chartInstance.update(); // Ini akan memicu animasi memutar/memudar yang mulus
+            }
         }
 
-        // Subscribe ke channel Realtime Supabase
+        async function renderData() {
+            let { data, error } = await supabase.from('poling').select('*').order('id', { ascending: true })
+            const out = document.getElementById('display-realtime')
+            
+            if(error) {
+                out.innerHTML = `<p class="text-red-500 col-span-3">Gagal mengambil data: ${error.message}</p>`;
+                return;
+            }
+
+            const namaKandidat = [];
+            const jumlahSuara = [];
+            
+            // Hitung total seluruh suara terlebih dahulu (untuk persentase di bawah)
+            let totalSeluruhSuara = 0;
+            data.forEach(k => { totalSeluruhSuara += k.jumlah_suara; });
+
+            // Render kotak detail di bawah grafik
+            out.innerHTML = data.map(k => {
+                namaKandidat.push(k.pilihan);
+                jumlahSuara.push(k.jumlah_suara);
+
+                // Hitung persentase untuk masing-masing kotak keterangan
+                let persentase = totalSeluruhSuara === 0 ? "0.0" : ((k.jumlah_suara / totalSeluruhSuara) * 100).toFixed(1);
+
+                return `
+                    <div class="flex flex-col items-center bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md">
+                        <span class="text-lg font-bold text-gray-700 text-center mb-1">${k.pilihan}</span>
+                        
+                        <div class="flex items-baseline gap-2 my-2">
+                            <span class="text-3xl font-extrabold text-blue-600">${k.jumlah_suara}</span>
+                            <span class="text-sm font-medium text-gray-500">Suara</span>
+                        </div>
+                        
+                        <!-- Lencana Persentase -->
+                        <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                            ${persentase}% dari total
+                        </div>
+                    </div>
+                `
+            }).join('')
+
+            // Update Grafik Pie
+            updateChart(namaKandidat, jumlahSuara, totalSeluruhSuara);
+        }
+
+        // Jalankan saat pertama kali
+        renderData()
+
+        // Realtime Listener
         supabase.channel('skema-poling')
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'poling' }, () => {
-            renderData()
+            renderData() 
         }).subscribe()
 
-        renderData()
     </script>
 </body>
 </html>
