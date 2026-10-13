@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Count Dashboard</title>
+    <!-- Menggunakan Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+        <h1 class="text-3xl font-bold mb-6 text-center text-gray-800">Hasil Live Count</h1>
+        <div id="display-realtime" class="space-y-4"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+        
+        // Ganti dengan URL dan ANON KEY dari Supabase Anda
+        const supabase = createClient('URL_SUPABASE', 'ANON_KEY')
+
+        async function renderData() {
+            let { data } = await supabase.from('poling').select('*').order('id', { ascending: true })
+            const out = document.getElementById('display-realtime')
+            
+            out.innerHTML = data.map(k => `
+                <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <span class="text-lg font-semibold text-gray-700">${k.pilihan}</span>
+                    <span class="text-2xl font-bold text-blue-600">${k.jumlah_suara} <span class="text-sm font-normal text-gray-500">Suara</span></span>
+                </div>
+            `).join('')
+        }
+
+        // Subscribe ke channel Realtime Supabase
+        supabase.channel('skema-poling')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'poling' }, () => {
+            renderData()
+        }).subscribe()
+
+        renderData()
+    </script>
+</body>
+</html>
