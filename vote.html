@@ -3,82 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menu Poling</title>
+    <title>Menu Poling Pemilihan</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm text-center">
-        <h1 class="text-2xl font-bold mb-6 text-gray-800">Silakan Pilih Kandidat</h1>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen py-10 px-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
         
-        <!-- Area untuk menampilkan tombol atau ERROR -->
-        <div id="tombol-container" class="flex flex-col gap-4">
-            <p class="text-gray-500">Memuat data kandidat...</p>
+        <!-- Tombol Kembali -->
+        <a href="index.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium mb-6 inline-block">&larr; Kembali ke Menu Utama</a>
+
+        <h1 class="text-2xl font-bold mb-6 text-gray-800 text-center">Formulir Pemilihan</h1>
+        
+        <!-- Form Identitas Siswa -->
+        <div class="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <h2 class="text-sm font-bold text-blue-800 mb-3 uppercase tracking-wider">Identitas Pemilih</h2>
+            
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="namaLengkap">Nama Lengkap</label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="namaLengkap" type="text" placeholder="Contoh: Budi Santoso">
+            </div>
+
+            <div class="mb-2">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="kelasSelect">Kelas</label>
+                <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="kelasSelect">
+                    <option value="">-- Pilih Kelas Anda --</option>
+                    <!-- Opsi kelas akan dimuat melalui JavaScript di bawah -->
+                </select>
+            </div>
+        </div>
+
+        <!-- Area Tombol Kandidat -->
+        <h2 class="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wider text-center">Kertas Suara</h2>
+        <div id="tombol-container" class="flex flex-col gap-3">
+            <p class="text-gray-500 text-center text-sm">Memuat data kandidat...</p>
         </div>
     </div>
 
     <script type="module">
         import { createClient } from 'https://esm.sh/@supabase/supabase-js'
         
-        // 1. PASTIKAN ANDA MENGGANTI INI DENGAN URL & KEY ASLI DARI SUPABASE!
-        const supabase = createClient('https://oyiglseqiakqxlfzyiyk.supabase.co', 'sb_publishable_ceJ4y5UKhnPPuKBLNrzOxQ_2fMCXD_3')
+        // --- MASUKKAN KREDENSIAL SUPABASE ANDA DI SINI ---
+        const url_anda = 'https://oyiglseqiakqxlfzyiyk.supabase.co'
+        const key_anda = 'PASTE_KODE_PUBLISHABLE_KEY_ANDA_DI_SINI' 
+        const supabase = createClient(url_anda, key_anda)
+
+        // Daftar Seluruh Kelas
+        const daftarKelas = [
+            "X ToKR A", "X ToKR B", "X ToKR C", "X ToKR D",
+            "X ToSM A", "X ToSM B", "X ToSM C", "X ToSM D", "X ToSM E", "X ToSM F", "X ToSM G", "X ToSM H",
+            "X TPFL", "X TP", "X TJKT", "X Lkes",
+            "XI TKR A", "XI TKR B", "XI TKR C", "XI TKR D",
+            "XI TSM A", "XI TSM B", "XI TSM C", "XI TSM D",
+            "XI TP A", "XI TP B", "XI TPL", "XI TKJ", "XI LPKC",
+            "XII TKR A", "XII TKR B", "XII TKR C",
+            "XII TSM A", "XII TSM B", "XII TSM C", "XII TSM D",
+            "XII TP", "XII LPKC", "XII TPL", "XII TKJ"
+        ];
+
+        // Memasukkan array kelas ke dalam elemen <select>
+        const kelasDropdown = document.getElementById('kelasSelect');
+        daftarKelas.forEach(kelas => {
+            let option = document.createElement('option');
+            option.value = kelas;
+            option.innerText = kelas;
+            kelasDropdown.appendChild(option);
+        });
 
         async function loadKandidat() {
             const container = document.getElementById('tombol-container')
-            container.innerHTML = '<p class="text-gray-500">Sedang menyambungkan ke Supabase...</p>'
-            
-            try {
-                // Mencoba mengambil data
-                let { data, error } = await supabase.from('poling').select('*').order('id', { ascending: true })
+            let { data, error } = await supabase.from('poling').select('*').order('id', { ascending: true })
 
-                // JIKA TERJADI ERROR (Misal: API Key salah, RLS memblokir, Tabel tidak ditemukan)
-                if (error) {
-                    console.error("Supabase Error:", error);
-                    container.innerHTML = `
-                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-left">
-                            <strong class="font-bold">Gagal mengambil data!</strong><br>
-                            <span class="block sm:inline">Pesan: ${error.message}</span>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // JIKA DATA KOSONG (Berhasil nyambung, tapi tabel kosong)
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<p class="text-yellow-600 font-semibold">Tabel kandidat masih kosong di database.</p>';
-                    return;
-                }
-
-                // JIKA BERHASIL MENGAMBIL DATA (Tampilkan tombol)
-                container.innerHTML = ''; // Kosongkan tulisan "memuat..."
-                data.forEach(k => {
-                    let btn = document.createElement('button')
-                    btn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow transition duration-200 ease-in-out transform hover:scale-105'
-                    btn.innerText = `Vote ${k.pilihan}`
-                    btn.onclick = () => kirimVote(k.id, k.jumlah_suara)
-                    container.appendChild(btn)
-                })
-
-            } catch (err) {
-                // JIKA ADA ERROR LAIN (Misal: masalah koneksi internet / browser)
-                container.innerHTML = `
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-left">
-                        <strong class="font-bold">Terjadi Kesalahan Sistem:</strong><br>
-                        <span class="block sm:inline">${err.message}</span>
-                    </div>
-                `;
+            if (error) {
+                container.innerHTML = `<p class="text-red-500 text-sm">Gagal memuat: ${error.message}</p>`;
+                return;
             }
-        }
 
-        async function kirimVote(id, currentVote) {
-            alert('Sedang diproses...');
-            const { error } = await supabase.from('poling').update({ jumlah_suara: currentVote + 1 }).eq('id', id)
-            
-            if(error) {
-                alert('GAGAL VOTE: ' + error.message);
-            } else {
-                alert('Terima kasih sudah memilih!');
-                loadKandidat();
-            }
+            container.innerHTML = ''; 
+            data.forEach(k => {
+                let btn = document.createElement('button')
+                btn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow transition duration-200 w-full'
+                btn.innerText = `Pilih ${k.pilihan}`
+                
+                btn.onclick = async () => {
+                    // Validasi Form
+                    const nama = document.getElementById('namaLengkap').value.trim().toUpperCase();
+                    const kelas = document.getElementById('kelasSelect').value;
+
+                    if (!nama || !kelas) {
+                        alert("Peringatan: Pastikan Anda sudah mengisi Nama Lengkap dan memilih Kelas!");
+                        return;
+                    }
+
+                    // Tampilkan status loading
+                    const teksAsli = btn.innerText;
+                    btn.innerText = "Memproses...";
+                    btn.disabled = true;
+
+                    // 1. Simpan Data Pemilih (Pengecekan Duplikat ada di sini)
+                    const { error: errRiwayat } = await supabase.from('riwayat_vote').insert({
+                        nama_lengkap: nama,
+                        kelas: kelas,
+                        kandidat_id: k.id
+                    });
+
+                    // Jika gagal menyimpan riwayat (Misal: Karena sudah pernah milih)
+                    if (errRiwayat) {
+                        if (errRiwayat.code === '23505') {
+                            alert(`Penolakan Sistem: Siswa atas nama ${nama} di ${kelas} SUDAH melakukan voting sebelumnya.`);
+                        } else {
+                            alert(`Error Database: ${errRiwayat.message}`);
+                        }
+                        btn.innerText = teksAsli;
+                        btn.disabled = false;
+                        return;
+                    }
+
+                    // 2. Jika sukses tercatat, tambahkan jumlah suara kandidat
+                    const { error: errVote } = await supabase.from('poling').update({ jumlah_suara: k.jumlah_suara + 1 }).eq('id', k.id);
+                    
+                    if (errVote) {
+                        alert("Terjadi kesalahan saat menambahkan suara.");
+                    } else {
+                        alert("Berhasil! Suara Anda telah masuk ke dalam kotak suara rahasia.");
+                        document.getElementById('namaLengkap').value = '';
+                        document.getElementById('kelasSelect').value = '';
+                        loadKandidat(); // Refresh data kandidat
+                    }
+                }
+                container.appendChild(btn)
+            })
         }
 
         loadKandidat()

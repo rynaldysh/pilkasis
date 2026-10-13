@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Riwayat Partisipasi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4 flex justify-center">
+    
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl">
+        <a href="index.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium mb-4 inline-block">&larr; Kembali ke Menu Utama</a>
+        
+        <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4 gap-4">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-800">Daftar Partisipasi Siswa</h1>
+                <p class="text-gray-500 text-sm mt-1">Data siswa yang sudah menggunakan hak suaranya.</p>
+            </div>
+            
+            <!-- Filter Dropdown -->
+            <div class="w-full md:w-64">
+                <label for="filterKelas" class="block text-sm font-bold text-gray-700 mb-1">Filter Berdasarkan Kelas:</label>
+                <select id="filterKelas" class="shadow border rounded w-full py-2 px-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="SEMUA">-- Tampilkan Semua Kelas --</option>
+                    <!-- Opsi kelas akan dimuat melalui JS -->
+                </select>
+            </div>
+        </div>
+
+        <!-- Tabel Data -->
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="min-w-full bg-white">
+                <thead class="bg-blue-600 text-white">
+                    <tr>
+                        <th class="py-3 px-6 text-left text-xs font-bold uppercase tracking-wider">No</th>
+                        <th class="py-3 px-6 text-left text-xs font-bold uppercase tracking-wider">Nama Siswa</th>
+                        <th class="py-3 px-6 text-left text-xs font-bold uppercase tracking-wider">Kelas</th>
+                        <th class="py-3 px-6 text-left text-xs font-bold uppercase tracking-wider">Waktu Pemilihan</th>
+                    </tr>
+                </thead>
+                <tbody id="tabel-body" class="text-gray-700 text-sm font-light divide-y divide-gray-200">
+                    <tr><td colspan="4" class="py-4 text-center text-gray-500">Memuat data partisipasi...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+        
+        // --- MASUKKAN KREDENSIAL SUPABASE ANDA DI SINI ---
+        const url_anda = 'https://oyiglseqiakqxlfzyiyk.supabase.co'
+        const key_anda = 'PASTE_KODE_PUBLISHABLE_KEY_ANDA_DI_SINI' 
+        const supabase = createClient(url_anda, key_anda)
+
+        // Daftar Kelas untuk Filter (Sama seperti di form vote)
+        const daftarKelas = [
+            "X ToKR A", "X ToKR B", "X ToKR C", "X ToKR D", "X ToSM A", "X ToSM B", "X ToSM C", "X ToSM D", "X ToSM E", "X ToSM F", "X ToSM G", "X ToSM H", "X TPFL", "X TP", "X TJKT", "X Lkes",
+            "XI TKR A", "XI TKR B", "XI TKR C", "XI TKR D", "XI TSM A", "XI TSM B", "XI TSM C", "XI TSM D", "XI TP A", "XI TP B", "XI TPL", "XI TKJ", "XI LPKC",
+            "XII TKR A", "XII TKR B", "XII TKR C", "XII TSM A", "XII TSM B", "XII TSM C", "XII TSM D", "XII TP", "XII LPKC", "XII TPL", "XII TKJ"
+        ];
+
+        const filterDropdown = document.getElementById('filterKelas');
+        daftarKelas.forEach(kelas => {
+            let option = document.createElement('option'); option.value = kelas; option.innerText = kelas;
+            filterDropdown.appendChild(option);
+        });
+
+        // Variabel penyimpan data mentah
+        let dataRiwayat = [];
+
+        async function fetchRiwayat() {
+            // Mengambil data dari tabel riwayat_vote, diurutkan dari yang paling baru
+            let { data, error } = await supabase.from('riwayat_vote').select('*').order('waktu_vote', { ascending: false });
+            
+            if (error) {
+                document.getElementById('tabel-body').innerHTML = `<tr><td colspan="4" class="py-4 text-center text-red-500">Gagal mengambil data: ${error.message}</td></tr>`;
+                return;
+            }
+            dataRiwayat = data;
+            renderTabel("SEMUA"); // Tampilkan semua saat awal dimuat
+        }
+
+        function renderTabel(filterValue) {
+            const tbody = document.getElementById('tabel-body');
+            tbody.innerHTML = '';
+
+            // Lakukan Filter Data
+            const dataFiltered = filterValue === "SEMUA" 
+                ? dataRiwayat 
+                : dataRiwayat.filter(item => item.kelas === filterValue);
+
+            if (dataFiltered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-gray-500 font-medium">Belum ada data pemilih untuk kelas ini.</td></tr>`;
+                return;
+            }
+
+            // Membangun baris tabel
+            dataFiltered.forEach((row, index) => {
+                // Memformat waktu agar lebih mudah dibaca
+                const dateObj = new Date(row.waktu_vote);
+                const formatWaktu = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB, ' + dateObj.toLocaleDateString('id-ID');
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 transition duration-150";
+                tr.innerHTML = `
+                    <td class="py-3 px-6 whitespace-nowrap font-medium text-gray-900">${index + 1}</td>
+                    <td class="py-3 px-6 whitespace-nowrap font-bold text-gray-800">${row.nama_lengkap}</td>
+                    <td class="py-3 px-6 whitespace-nowrap"><span class="bg-gray-200 text-gray-700 py-1 px-3 rounded-full text-xs font-bold">${row.kelas}</span></td>
+                    <td class="py-3 px-6 whitespace-nowrap text-gray-500 text-xs">${formatWaktu}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Event listener saat filter diubah
+        filterDropdown.addEventListener('change', (e) => {
+            renderTabel(e.target.value);
+        });
+
+        fetchRiwayat();
+    </script>
+</body>
+</html>
