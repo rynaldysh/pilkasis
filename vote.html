@@ -3,39 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menu Poling Pemilihan</title>
+    <title>Bilik Suara - E-Voting</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen py-10 px-4">
-    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md border-t-8 border-blue-600">
         
-        <!-- Tombol Kembali -->
-        <a href="index.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium mb-6 inline-block">&larr; Kembali ke Menu Utama</a>
+        <a href="index.html" class="text-blue-600 hover:text-blue-800 text-sm font-medium mb-6 inline-block transition-colors">&larr; Kembali ke Menu Utama</a>
 
         <h1 class="text-2xl font-bold mb-6 text-gray-800 text-center">Formulir Pemilihan</h1>
         
-        <!-- Form Identitas Siswa -->
-        <div class="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-100">
-            <h2 class="text-sm font-bold text-blue-800 mb-3 uppercase tracking-wider">Identitas Pemilih</h2>
+        <!-- Form Identitas Pemilih Berjenjang -->
+        <div class="mb-8 bg-blue-50 p-5 rounded-xl border border-blue-100 shadow-sm">
+            <h2 class="text-sm font-bold text-blue-800 mb-4 uppercase tracking-wider border-b border-blue-200 pb-2">Verifikasi Data DPT</h2>
             
+            <!-- 1. Dropdown Kelas -->
             <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="namaLengkap">Nama Lengkap</label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="namaLengkap" type="text" placeholder="Contoh: Budi Santoso">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="kelasSelect">1. Pilih Kelas Anda</label>
+                <select class="shadow border border-gray-300 rounded-lg w-full py-2.5 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer transition-all" id="kelasSelect">
+                    <option value="">-- Memuat Daftar Kelas... --</option>
+                </select>
             </div>
 
+            <!-- 2. Dropdown Nama (Akan aktif setelah kelas dipilih) -->
             <div class="mb-2">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="kelasSelect">Kelas</label>
-                <select class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500" id="kelasSelect">
-                    <option value="">-- Pilih Kelas Anda --</option>
-                    <!-- Opsi kelas akan dimuat melalui JavaScript di bawah -->
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="namaSelect">2. Pilih Nama Anda</label>
+                <select class="shadow border border-gray-300 rounded-lg w-full py-2.5 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-100 cursor-not-allowed transition-all" id="namaSelect" disabled>
+                    <option value="">-- Pilih Kelas Terlebih Dahulu --</option>
                 </select>
+                <p class="text-xs text-gray-500 mt-2 italic">*Nama yang sudah memilih otomatis hilang dari daftar.</p>
             </div>
         </div>
 
-        <!-- Area Tombol Kandidat -->
-        <h2 class="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wider text-center">Kertas Suara</h2>
+        <h2 class="text-sm font-bold text-gray-800 mb-4 uppercase tracking-wider text-center border-b pb-2">Kertas Suara</h2>
         <div id="tombol-container" class="flex flex-col gap-3">
-            <p class="text-gray-500 text-center text-sm">Memuat data kandidat...</p>
+            <p class="text-gray-500 text-center text-sm animate-pulse">Memuat data kandidat...</p>
         </div>
     </div>
 
@@ -47,94 +49,155 @@
         const key_anda = 'sb_publishable_ceJ4y5UKhnPPuKBLNrzOxQ_2fMCXD_3' 
         const supabase = createClient(url_anda, key_anda)
 
-        // Daftar Seluruh Kelas
-        const daftarKelas = [
-            "X ToKR A", "X ToKR B", "X ToKR C", "X ToKR D",
-            "X ToSM A", "X ToSM B", "X ToSM C", "X ToSM D", "X ToSM E", "X ToSM F", "X ToSM G", "X ToSM H",
-            "X TPFL", "X TP", "X TJKT", "X Lkes",
-            "XI TKR A", "XI TKR B", "XI TKR C", "XI TKR D",
-            "XI TSM A", "XI TSM B", "XI TSM C", "XI TSM D",
-            "XI TP A", "XI TP B", "XI TPL", "XI TKJ", "XI LPKC",
-            "XII TKR A", "XII TKR B", "XII TKR C",
-            "XII TSM A", "XII TSM B", "XII TSM C", "XII TSM D",
-            "XII TP", "XII LPKC", "XII TPL", "XII TKJ"
-        ];
+        // 1. Fungsi Memuat Daftar Kelas
+        async function loadKelasDinamic() {
+            const dropdown = document.getElementById('kelasSelect');
+            let { data, error } = await supabase.from('dpt_pemilih').select('kelas');
+            
+            if (error) {
+                dropdown.innerHTML = `<option value="">Gagal memuat kelas</option>`;
+                return;
+            }
 
-        // Memasukkan array kelas ke dalam elemen <select>
-        const kelasDropdown = document.getElementById('kelasSelect');
-        daftarKelas.forEach(kelas => {
-            let option = document.createElement('option');
-            option.value = kelas;
-            option.innerText = kelas;
-            kelasDropdown.appendChild(option);
+            const kelasUnik = [...new Set(data.map(item => item.kelas))].sort();
+            dropdown.innerHTML = `<option value="">-- Pilih Kelas Anda --</option>`;
+            
+            kelasUnik.forEach(k => {
+                if (k) {
+                    let option = document.createElement('option');
+                    option.value = k;
+                    option.innerText = k;
+                    dropdown.appendChild(option);
+                }
+            });
+        }
+
+        // 2. Event Listener: Jika Kelas Berubah, Ambil Nama Siswa
+        document.getElementById('kelasSelect').addEventListener('change', async (e) => {
+            const kelasTerpilih = e.target.value;
+            const namaSelect = document.getElementById('namaSelect');
+
+            // Jika kelas dikosongkan kembali
+            if (!kelasTerpilih) {
+                namaSelect.innerHTML = '<option value="">-- Pilih Kelas Terlebih Dahulu --</option>';
+                namaSelect.disabled = true;
+                namaSelect.classList.add('bg-gray-100', 'cursor-not-allowed');
+                return;
+            }
+
+            // Tampilan Loading
+            namaSelect.innerHTML = '<option value="">-- Sedang Memuat Nama... --</option>';
+            namaSelect.disabled = true;
+
+            // Mengambil HANYA siswa di kelas tersebut yang BELUM memilih (status_vote = false)
+            let { data, error } = await supabase
+                .from('dpt_pemilih')
+                .select('id, nama_lengkap')
+                .eq('kelas', kelasTerpilih)
+                .eq('status_vote', false)
+                .order('nama_lengkap', { ascending: true }); // Diurutkan sesuai abjad A-Z
+
+            if (error) {
+                namaSelect.innerHTML = `<option value="">Error memuat nama</option>`;
+                return;
+            }
+
+            // Jika semua siswa di kelas tersebut sudah memilih
+            if (data.length === 0) {
+                namaSelect.innerHTML = '<option value="">✅ Semua siswa di kelas ini sudah memilih</option>';
+                return;
+            }
+
+            // Memasukkan nama-nama siswa ke dropdown
+            namaSelect.innerHTML = '<option value="">-- Pilih Nama Anda --</option>';
+            data.forEach(siswa => {
+                let option = document.createElement('option');
+                // Kita gunakan 'id' unik dari database sebagai value, bukan namanya
+                option.value = siswa.id; 
+                option.innerText = siswa.nama_lengkap;
+                namaSelect.appendChild(option);
+            });
+
+            // Aktifkan dropdown nama
+            namaSelect.disabled = false;
+            namaSelect.classList.remove('bg-gray-100', 'cursor-not-allowed');
+            namaSelect.classList.add('bg-white', 'cursor-pointer');
         });
 
+        // 3. Fungsi Memuat Kandidat dan Menangani Proses Voting
         async function loadKandidat() {
             const container = document.getElementById('tombol-container')
             let { data, error } = await supabase.from('poling').select('*').order('id', { ascending: true })
 
-            if (error) {
-                container.innerHTML = `<p class="text-red-500 text-sm">Gagal memuat: ${error.message}</p>`;
-                return;
-            }
+            if (error) return container.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
 
             container.innerHTML = ''; 
             data.forEach(k => {
                 let btn = document.createElement('button')
-                btn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow transition duration-200 w-full'
+                btn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl shadow-md w-full transition duration-300 transform hover:-translate-y-1'
                 btn.innerText = `Pilih ${k.pilihan}`
                 
                 btn.onclick = async () => {
-                    // Validasi Form
-                    const nama = document.getElementById('namaLengkap').value.trim().toUpperCase();
-                    const kelas = document.getElementById('kelasSelect').value;
+                    const kelasTerpilih = document.getElementById('kelasSelect').value;
+                    const dptIdTerpilih = document.getElementById('namaSelect').value; // Mengambil ID siswa
 
-                    if (!nama || !kelas) {
-                        alert("Peringatan: Pastikan Anda sudah mengisi Nama Lengkap dan memilih Kelas!");
-                        return;
-                    }
+                    // Validasi form kosong
+                    if (!kelasTerpilih) return alert("Peringatan: Silakan pilih Kelas Anda terlebih dahulu!");
+                    if (!dptIdTerpilih) return alert("Peringatan: Silakan pilih Nama Anda dari daftar!");
 
-                    // Tampilkan status loading
-                    const teksAsli = btn.innerText;
-                    btn.innerText = "Memproses...";
+                    // Konfirmasi (Opsional tapi bagus agar tidak salah pencet)
+                    const namaTeks = document.getElementById('namaSelect').options[document.getElementById('namaSelect').selectedIndex].text;
+                    const yakin = confirm(`Apakah Anda yakin memilih menggunakan nama "${namaTeks}"? Pilihan tidak dapat dibatalkan.`);
+                    if (!yakin) return;
+
+                    btn.innerText = "Memproses..."; 
                     btn.disabled = true;
 
-                    // 1. Simpan Data Pemilih (Pengecekan Duplikat ada di sini)
-                    const { error: errRiwayat } = await supabase.from('riwayat_vote').insert({
-                        nama_lengkap: nama,
-                        kelas: kelas,
-                        kandidat_id: k.id
-                    });
+                    // 1. UPDATE DPT: Menandai siswa sudah memilih berdasarkan ID-nya
+                    // Keamanan tambahan: .eq('status_vote', false) mencegah bug jika 2 orang mengeklik nama yang sama persis di detik yang sama
+                    const waktuSekarang = new Date().toISOString();
+                    const { data: updateData, error: updateDptError } = await supabase
+                        .from('dpt_pemilih')
+                        .update({ status_vote: true, kandidat_id: k.id, waktu_vote: waktuSekarang })
+                        .eq('id', dptIdTerpilih)
+                        .eq('status_vote', false)
+                        .select(); // Mengembalikan data yang berhasil diupdate
 
-                    // Jika gagal menyimpan riwayat (Misal: Karena sudah pernah milih)
-                    if (errRiwayat) {
-                        if (errRiwayat.code === '23505') {
-                            alert(`Penolakan Sistem: Siswa atas nama ${nama} di ${kelas} SUDAH melakukan voting sebelumnya.`);
-                        } else {
-                            alert(`Error Database: ${errRiwayat.message}`);
-                        }
-                        btn.innerText = teksAsli;
+                    // Jika gagal update atau data kosong (artinya orang tersebut baru saja sedetik yang lalu sudah divote)
+                    if (updateDptError || updateData.length === 0) {
+                        alert("GAGAL: Nama ini baru saja digunakan untuk memilih. Daftar nama akan diperbarui.");
+                        document.getElementById('kelasSelect').dispatchEvent(new Event('change')); // Refresh daftar nama
+                        btn.innerText = `Pilih ${k.pilihan}`; 
                         btn.disabled = false;
                         return;
                     }
 
-                    // 2. Jika sukses tercatat, tambahkan jumlah suara kandidat
+                    // 2. TAMBAH SUARA: Menambahkan jumlah suara ke tabel kandidat
                     const { error: errVote } = await supabase.from('poling').update({ jumlah_suara: k.jumlah_suara + 1 }).eq('id', k.id);
                     
-                    if (errVote) {
-                        alert("Terjadi kesalahan saat menambahkan suara.");
-                    } else {
-                        alert("Berhasil! Suara Anda telah masuk ke dalam kotak suara rahasia.");
-                        document.getElementById('namaLengkap').value = '';
+                    if (!errVote) {
+                        alert(`Terima kasih, ${namaTeks}! Suara Anda berhasil dimasukkan ke dalam kotak suara rahasia.`);
+                        
+                        // Reset Form Tampilan
                         document.getElementById('kelasSelect').value = '';
-                        loadKandidat(); // Refresh data kandidat
+                        document.getElementById('namaSelect').innerHTML = '<option value="">-- Pilih Kelas Terlebih Dahulu --</option>';
+                        document.getElementById('namaSelect').disabled = true;
+                        document.getElementById('namaSelect').classList.add('bg-gray-100', 'cursor-not-allowed');
+                    } else {
+                        alert("Terjadi masalah saat memasukkan suara.");
                     }
+                    
+                    btn.innerText = `Pilih ${k.pilihan}`; 
+                    btn.disabled = false;
+                    loadKandidat(); // Refresh tombol agar ambil data terbaru
                 }
                 container.appendChild(btn)
             })
         }
 
-        loadKandidat()
+        // Panggil saat halaman dibuka
+        loadKelasDinamic();
+        loadKandidat();
     </script>
 </body>
 </html>
