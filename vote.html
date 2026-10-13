@@ -1,55 +1,87 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu Poling</title>
-    <!-- Menggunakan Tailwind CSS untuk styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm text-center">
-      <h1 class="text-2xl font-bold mb-6 text-gray-800">
-        Silakan Pilih Kandidat
-      </h1>
-      <div id="tombol-container" class="flex flex-col gap-4"></div>
+        <h1 class="text-2xl font-bold mb-6 text-gray-800">Silakan Pilih Kandidat</h1>
+        
+        <!-- Area untuk menampilkan tombol atau ERROR -->
+        <div id="tombol-container" class="flex flex-col gap-4">
+            <p class="text-gray-500">Memuat data kandidat...</p>
+        </div>
     </div>
 
     <script type="module">
-      import { createClient } from "https://esm.sh/@supabase/supabase-js";
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+        
+        // 1. PASTIKAN ANDA MENGGANTI INI DENGAN URL & KEY ASLI DARI SUPABASE!
+        const supabase = createClient('https://oyiglseqiakqxlfzyiyk.supabase.co', 'sb_publishable_ceJ4y5UKhnPPuKBLNrzOxQ_2fMCXD_3')
 
-      // Ganti dengan URL dan ANON KEY dari Supabase Anda
-      const supabase = createClient("URL_SUPABASE", "ANON_KEY");
+        async function loadKandidat() {
+            const container = document.getElementById('tombol-container')
+            container.innerHTML = '<p class="text-gray-500">Sedang menyambungkan ke Supabase...</p>'
+            
+            try {
+                // Mencoba mengambil data
+                let { data, error } = await supabase.from('poling').select('*').order('id', { ascending: true })
 
-      async function loadKandidat() {
-        let { data } = await supabase
-          .from("poling")
-          .select("*")
-          .order("id", { ascending: true });
-        const container = document.getElementById("tombol-container");
-        container.innerHTML = "";
+                // JIKA TERJADI ERROR (Misal: API Key salah, RLS memblokir, Tabel tidak ditemukan)
+                if (error) {
+                    console.error("Supabase Error:", error);
+                    container.innerHTML = `
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-left">
+                            <strong class="font-bold">Gagal mengambil data!</strong><br>
+                            <span class="block sm:inline">Pesan: ${error.message}</span>
+                        </div>
+                    `;
+                    return;
+                }
 
-        data.forEach((k) => {
-          let btn = document.createElement("button");
-          btn.className =
-            "bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow transition duration-200 ease-in-out transform hover:scale-105";
-          btn.innerText = `Vote ${k.pilihan}`;
-          btn.onclick = () => kirimVote(k.id, k.jumlah_suara);
-          container.appendChild(btn);
-        });
-      }
+                // JIKA DATA KOSONG (Berhasil nyambung, tapi tabel kosong)
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p class="text-yellow-600 font-semibold">Tabel kandidat masih kosong di database.</p>';
+                    return;
+                }
 
-      async function kirimVote(id, currentVote) {
-        // Melakukan update nilai jumlah_suara + 1 ke database
-        await supabase
-          .from("poling")
-          .update({ jumlah_suara: currentVote + 1 })
-          .eq("id", id);
-        alert("Terima kasih sudah memilih!");
-        loadKandidat();
-      }
+                // JIKA BERHASIL MENGAMBIL DATA (Tampilkan tombol)
+                container.innerHTML = ''; // Kosongkan tulisan "memuat..."
+                data.forEach(k => {
+                    let btn = document.createElement('button')
+                    btn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg shadow transition duration-200 ease-in-out transform hover:scale-105'
+                    btn.innerText = `Vote ${k.pilihan}`
+                    btn.onclick = () => kirimVote(k.id, k.jumlah_suara)
+                    container.appendChild(btn)
+                })
 
-      loadKandidat();
+            } catch (err) {
+                // JIKA ADA ERROR LAIN (Misal: masalah koneksi internet / browser)
+                container.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative text-left">
+                        <strong class="font-bold">Terjadi Kesalahan Sistem:</strong><br>
+                        <span class="block sm:inline">${err.message}</span>
+                    </div>
+                `;
+            }
+        }
+
+        async function kirimVote(id, currentVote) {
+            alert('Sedang diproses...');
+            const { error } = await supabase.from('poling').update({ jumlah_suara: currentVote + 1 }).eq('id', id)
+            
+            if(error) {
+                alert('GAGAL VOTE: ' + error.message);
+            } else {
+                alert('Terima kasih sudah memilih!');
+                loadKandidat();
+            }
+        }
+
+        loadKandidat()
     </script>
-  </body>
+</body>
 </html>
