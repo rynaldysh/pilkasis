@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Poling Utama</title>
+    <!-- Menggunakan Tailwind CSS untuk styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-10 rounded-2xl shadow-xl w-full max-w-lg text-center">
+        <!-- Ikon atau Logo (Opsional) -->
+        <div class="mb-6 flex justify-center">
+            <div class="bg-blue-100 p-4 rounded-full">
+                <svg class="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <h1 class="text-3xl font-extrabold mb-4 text-gray-800">Sistem Poling Interaktif</h1>
+        <p class="text-gray-600 mb-8 leading-relaxed">Selamat datang! Silakan pilih menu di bawah ini untuk memberikan suara Anda atau melihat hasil perolehan suara sementara secara real-time.</p>
+        
+        <div class="flex flex-col gap-5">
+            <!-- Tombol ke Halaman Vote -->
+            <a href="vote.html" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:-translate-y-1 flex justify-center items-center gap-2">
+                <span class="text-xl">🗳️</span> Masuk ke Halaman Vote
+            </a>
+            
+            <!-- Tombol ke Halaman Dashboard Live Count -->
+            <a href="dashboard.html" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:-translate-y-1 flex justify-center items-center gap-2">
+                <span class="text-xl">📊</span> Lihat Hasil Live Count
+            </a>
+        </div>
+        
+        <div class="mt-8 text-sm text-gray-400">
+            &copy; 2026 Sistem Poling Real-time
+        </div>
+    </div>
+</body>
+</html>
