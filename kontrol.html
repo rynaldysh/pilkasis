@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kontrol Pusat Pemilihan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 min-h-screen flex flex-col items-center py-10 px-4 text-white">
+
+    <!-- LAYAR LOGIN -->
+    <div id="login-screen" class="flex flex-col items-center justify-center w-full max-w-sm mt-20">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full text-center border-t-8 border-red-500">
+            <h2 class="text-2xl font-extrabold mb-2 text-white">Akses Admin Pusat</h2>
+            <p class="text-gray-400 text-sm mb-6">Area Terlarang. Masukkan kata sandi.</p>
+            
+            <input type="password" id="password-input" class="shadow border border-gray-600 bg-gray-700 rounded-lg w-full py-3 px-4 text-white mb-4 focus:outline-none focus:ring-2 focus:ring-red-500 text-center" placeholder="Kata Sandi...">
+            
+            <button id="btn-login" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg w-full transition duration-300">Akses Panel</button>
+            <p id="error-msg" class="text-red-400 text-sm mt-3 hidden font-semibold">Kata sandi salah!</p>
+        </div>
+    </div>
+
+    <!-- KONTEN UTAMA -->
+    <div id="main-content" class="hidden w-full max-w-md flex-col items-center mt-10">
+        <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full text-center border-t-8 border-blue-500 relative">
+            
+            <button id="btn-keluar" class="absolute top-4 left-4 text-gray-400 hover:text-white text-sm flex items-center gap-1 transition">
+                &larr; Keluar
+            </button>
+
+            <h1 class="text-3xl font-extrabold mb-2 mt-6">Panel Kontrol Voting</h1>
+            <p class="text-gray-400 text-sm mb-8">Atur status bilik suara di sini.</p>
+            
+            <div class="mb-8 p-6 rounded-xl bg-gray-700 border border-gray-600 shadow-inner">
+                <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-2">Status Saat Ini:</h3>
+                <p id="status-display" class="text-3xl font-extrabold animate-pulse">Memuat...</p>
+            </div>
+
+            <!-- Tombol Aksi -->
+            <button id="btn-toggle" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl w-full shadow-lg transition duration-300 transform hover:-translate-y-1 mb-3">
+                Memuat Tombol...
+            </button>
+            
+            <p class="text-xs text-gray-400 italic mt-4">*Jika ditutup, seluruh link bilik suara (vote.html) tidak akan bisa digunakan oleh pemilih.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js'
+        
+        // --- MASUKKAN KREDENSIAL SUPABASE ANDA ---
+        const url_anda = 'https://oyiglseqiakqxlfzyiyk.supabase.co'
+        const key_anda = 'sb_publishable_ceJ4y5UKhnPPuKBLNrzOxQ_2fMCXD_3' 
+        const supabase = createClient(url_anda, key_anda)
+
+        // Login System
+        const passBenar = "pilkasis2026";
+        document.getElementById('btn-login').addEventListener('click', () => {
+            if (document.getElementById('password-input').value === passBenar) {
+                sessionStorage.setItem('authAdmin', 'true');
+                mulaiSistem();
+            } else {
+                document.getElementById('error-msg').classList.remove('hidden');
+            }
+        });
+
+        if (sessionStorage.getItem('authAdmin') === 'true') mulaiSistem();
+
+        document.getElementById('btn-keluar').addEventListener('click', () => {
+            sessionStorage.removeItem('authAdmin');
+            location.reload();
+        });
+
+        let statusSaatIni = true;
+
+        function mulaiSistem() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('flex');
+            fetchStatus();
+        }
+
+        async function fetchStatus() {
+            let { data, error } = await supabase.from('pengaturan').select('status_voting').eq('id', 1).single();
+            if (error) return alert("Gagal mengambil data pengaturan.");
+            
+            statusSaatIni = data.status_voting;
+            updateUI();
+        }
+
+        function updateUI() {
+            const display = document.getElementById('status-display');
+            const btn = document.getElementById('btn-toggle');
+
+            if (statusSaatIni === true) {
+                display.innerText = "🟢 TERBUKA";
+                display.className = "text-3xl font-extrabold text-green-400";
+                
+                btn.innerText = "KUNCI & TUTUP VOTING SEKARANG";
+                btn.className = "bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-xl w-full shadow-lg transition duration-300 transform hover:-translate-y-1 mb-3";
+            } else {
+                display.innerText = "🔴 DITUTUP";
+                display.className = "text-3xl font-extrabold text-red-500";
+                
+                btn.innerText = "BUKA KEMBALI VOTING";
+                btn.className = "bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl w-full shadow-lg transition duration-300 transform hover:-translate-y-1 mb-3";
+            }
+        }
+
+        document.getElementById('btn-toggle').addEventListener('click', async () => {
+            const konfirmasi = confirm(`Apakah Anda yakin ingin ${statusSaatIni ? 'MENUTUP' : 'MEMBUKA'} proses pemilihan?`);
+            if (!konfirmasi) return;
+
+            document.getElementById('btn-toggle').innerText = "Memproses...";
+            
+            const statusBaru = !statusSaatIni;
+            const { error } = await supabase.from('pengaturan').update({ status_voting: statusBaru }).eq('id', 1);
+            
+            if (error) {
+                alert("Gagal merubah status: " + error.message);
+            } else {
+                statusSaatIni = statusBaru;
+                updateUI();
+            }
+        });
+    </script>
+</body>
+</html>

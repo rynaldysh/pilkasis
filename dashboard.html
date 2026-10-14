@@ -8,9 +8,19 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center py-10 px-4">
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-10 px-4 relative">
 
-    <!-- LAYAR LOGIN (Tampil pertama kali) -->
+    <!-- EFEK LAYAR PEMILIHAN DITUTUP (Realtime dari Kontrol) -->
+    <div id="overlay-tutup-dashboard" class="hidden fixed inset-0 bg-red-900/90 backdrop-blur-md z-50 flex-col items-center justify-center p-8 text-center text-white transition-all duration-300">
+        <span class="text-8xl mb-4 animate-bounce">🚨</span>
+        <h1 class="text-5xl font-extrabold mb-3 tracking-wider">VOTING TELAH DITUTUP</h1>
+        <p class="text-xl font-medium max-w-lg text-red-100 mb-6">Panitia telah mengunci bilik suara dari panel kontrol pusat. Grafik di bawah ini adalah hasil perolehan suara akhir.</p>
+        <div class="bg-white/20 border border-white/30 px-8 py-3 rounded-xl font-bold text-lg shadow-lg">
+            🔒 Live Count Dikunci Panitia
+        </div>
+    </div>
+
+    <!-- LAYAR LOGIN -->
     <div id="login-screen" class="flex flex-col items-center justify-center w-full max-w-sm mt-20">
         <div class="bg-white p-8 rounded-2xl shadow-xl w-full text-center border-t-8 border-emerald-500">
             <h2 class="text-2xl font-extrabold mb-2 text-gray-800">Akses Terkunci</h2>
@@ -25,24 +35,42 @@
         </div>
     </div>
 
-    <!-- KONTEN UTAMA (Disembunyikan sampai login berhasil) -->
+    <!-- KONTEN UTAMA -->
     <div id="main-content" class="hidden w-full max-w-4xl flex-col items-center">
         <div class="w-full mb-4">
-            <a href="index.html" class="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium transition">
-                <span>&larr;</span> Kembali ke Menu Utama
-            </a>
+            <button id="btn-keluar" class="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium transition cursor-pointer">
+                <span>&larr;</span> Kembali & Keluar (Logout)
+            </button>
         </div>
 
         <div class="bg-white p-8 rounded-2xl shadow-xl w-full">
-            <h1 class="text-3xl font-extrabold mb-2 text-center text-gray-800">📊 Hasil Live Count</h1>
-            <p class="text-center text-gray-500 mb-8">Visualisasi Persentase Suara Real-time</p>
+            <h1 class="text-3xl font-extrabold mb-2 text-center text-gray-800">📊 Hasil Live Count PILKASIS</h1>
+            <p class="text-center text-gray-500 mb-8 font-semibold text-lg tracking-wide">SMK Pancasila 1 Kutoarjo</p>
             
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                <div class="bg-blue-50 border border-blue-200 p-5 rounded-xl text-center shadow-sm">
+                    <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider">Total Terdaftar (DPT)</h3>
+                    <p id="stat-total" class="text-4xl font-extrabold text-blue-600 mt-2">...</p>
+                    <p class="text-xs text-blue-500 mt-1">Siswa & Guru</p>
+                </div>
+                <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-xl text-center shadow-sm">
+                    <h3 class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Sudah Memilih</h3>
+                    <p id="stat-masuk" class="text-4xl font-extrabold text-emerald-600 mt-2">...</p>
+                    <p class="text-xs text-emerald-500 mt-1">Suara Masuk</p>
+                </div>
+                <div class="bg-red-50 border border-red-200 p-5 rounded-xl text-center shadow-sm">
+                    <h3 class="text-xs font-bold text-red-800 uppercase tracking-wider">Belum Memilih</h3>
+                    <p id="stat-sisa" class="text-4xl font-extrabold text-red-600 mt-2">...</p>
+                    <p class="text-xs text-red-500 mt-1">Sisa Pemilih</p>
+                </div>
+            </div>
+
             <div class="w-full mb-10 flex justify-center h-[400px]">
                 <canvas id="polingChart"></canvas>
             </div>
 
             <div class="border-t border-gray-200 pt-6">
-                <h2 class="text-xl font-bold mb-4 text-gray-700">Rincian Perolehan:</h2>
+                <h2 class="text-xl font-bold mb-4 text-gray-700">Rincian Perolehan Kandidat:</h2>
                 <div id="display-realtime" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <p class="text-gray-400 italic">Menyambungkan ke database...</p>
                 </div>
@@ -61,7 +89,7 @@
         Chart.register(ChartDataLabels);
         let chartInstance = null;
 
-        // --- SISTEM LOGIN ---
+        // --- SISTEM LOGIN & LOGOUT OTOMATIS ---
         const passBenar = "pilkasis2026";
         
         document.getElementById('btn-login').addEventListener('click', () => {
@@ -74,42 +102,67 @@
             }
         });
 
-        // Cek jika sudah login sebelumnya (saat di-refresh)
         if (sessionStorage.getItem('authDashboard') === 'true') {
             mulaiSistem();
         }
 
-        // Fungsi ini hanya berjalan jika login berhasil
+        document.getElementById('btn-keluar').addEventListener('click', () => {
+            sessionStorage.removeItem('authDashboard');
+            window.location.href = 'index.html'; 
+        });
+
+        window.addEventListener('beforeunload', () => {
+            sessionStorage.removeItem('authDashboard');
+        });
+
+        // FUNGSI CEK STATUS DARI TABEL PENGATURAN
+        async function cekStatusDashboard() {
+            let { data, error } = await supabase.from('pengaturan').select('status_voting').eq('id', 1).single();
+            const overlay = document.getElementById('overlay-tutup-dashboard');
+            
+            if (data && data.status_voting === false) {
+                overlay.classList.remove('hidden');
+                overlay.classList.add('flex');
+            } else {
+                overlay.classList.remove('flex');
+                overlay.classList.add('hidden');
+            }
+        }
+
         function mulaiSistem() {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
             document.getElementById('main-content').classList.add('flex');
             
+            cekStatusDashboard();
             renderData();
 
-            supabase.channel('skema-poling')
+            // Mendengarkan perubahan real-time pada poling, dpt_pemilih, dan pengaturan
+            supabase.channel('pantau-semua-dashboard')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'poling' }, () => {
-                renderData() 
-            }).subscribe()
+                renderData();
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'dpt_pemilih' }, () => {
+                renderData();
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pengaturan' }, (payload) => {
+                // Efek langsung muncul/hilang secara real-time tanpa refresh
+                cekStatusDashboard();
+            })
+            .subscribe();
         }
 
-        // --- FUNGSI GRAFIK (Sama seperti sebelumnya) ---
+        // --- FUNGSI GRAFIK ---
         function updateChart(namaKandidat, jumlahSuara, totalSeluruhSuara) {
             const ctx = document.getElementById('polingChart').getContext('2d');
-            const backgroundColors = ['rgba(59, 130, 246, 0.85)', 'rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)'];
+            const backgroundColors = ['rgba(59, 130, 246, 0.85)', 'rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)', 'rgba(239, 68, 68, 0.85)'];
 
             if (!chartInstance) {
                 chartInstance = new Chart(ctx, {
                     type: 'pie',
                     data: {
                         labels: namaKandidat,
-                        datasets: [{
-                            data: jumlahSuara,
-                            backgroundColor: backgroundColors,
-                            borderWidth: 2,
-                            borderColor: '#ffffff',
-                            hoverOffset: 10
-                        }]
+                        datasets: [{ data: jumlahSuara, backgroundColor: backgroundColors, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 10 }]
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
@@ -118,34 +171,45 @@
                             legend: { position: 'bottom', labels: { padding: 20, font: { size: 14, weight: 'bold' } } },
                             datalabels: {
                                 color: '#ffffff', font: { weight: 'bold', size: 16 },
-                                formatter: (value) => {
-                                    if (totalSeluruhSuara === 0) return '0%';
-                                    return (value / totalSeluruhSuara * 100).toFixed(1) + "%";
+                                formatter: (value, context) => {
+                                    let dataArr = context.chart.data.datasets[0].data;
+                                    let totalDinamis = dataArr.reduce((a, b) => a + b, 0);
+                                    if (totalDinamis === 0) return '0%';
+                                    return (value / totalDinamis * 100).toFixed(1) + "%";
                                 }
                             }
                         }
                     }
                 });
             } else {
-                chartInstance.data.labels = namaKandidat;
-                chartInstance.data.datasets[0].data = jumlahSuara;
+                chartInstance.data.labels = namaKandidat; 
+                chartInstance.data.datasets[0].data = jumlahSuara; 
                 chartInstance.update();
             }
         }
 
+        // --- FUNGSI MENGAMBIL DAN MERENDER DATA ---
         async function renderData() {
-            let { data, error } = await supabase.from('poling').select('*').order('id', { ascending: true })
+            let { count: totalDPT, error: errTotal } = await supabase.from('dpt_pemilih').select('*', { count: 'exact', head: true });
+            let { count: suaraMasuk, error: errMasuk } = await supabase.from('dpt_pemilih').select('*', { count: 'exact', head: true }).eq('status_vote', true);
+
+            if (!errTotal && !errMasuk) {
+                document.getElementById('stat-total').innerText = totalDPT;
+                document.getElementById('stat-masuk').innerText = suaraMasuk;
+                document.getElementById('stat-sisa').innerText = totalDPT - suaraMasuk;
+            }
+
+            let { data: polingData, error: polingErr } = await supabase.from('poling').select('*').order('id', { ascending: true })
             const out = document.getElementById('display-realtime')
             
-            if(error) return out.innerHTML = `<p class="text-red-500 col-span-3">Gagal mengambil data: ${error.message}</p>`;
+            if(polingErr) return out.innerHTML = `<p class="text-red-500 col-span-3">Gagal mengambil data kandidat: ${polingErr.message}</p>`;
 
-            const namaKandidat = [], jumlahSuara = [];
-            let totalSeluruhSuara = 0;
-            data.forEach(k => { totalSeluruhSuara += k.jumlah_suara; });
+            const namaKandidat = [], jumlahSuara = []; let totalSuaraKandidat = 0;
+            polingData.forEach(k => { totalSuaraKandidat += k.jumlah_suara; });
 
-            out.innerHTML = data.map(k => {
+            out.innerHTML = polingData.map(k => {
                 namaKandidat.push(k.pilihan); jumlahSuara.push(k.jumlah_suara);
-                let persentase = totalSeluruhSuara === 0 ? "0.0" : ((k.jumlah_suara / totalSeluruhSuara) * 100).toFixed(1);
+                let persentase = totalSuaraKandidat === 0 ? "0.0" : ((k.jumlah_suara / totalSuaraKandidat) * 100).toFixed(1);
 
                 return `
                     <div class="flex flex-col items-center bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm transition-all transform hover:-translate-y-1">
@@ -158,7 +222,7 @@
                     </div>`
             }).join('')
 
-            updateChart(namaKandidat, jumlahSuara, totalSeluruhSuara);
+            updateChart(namaKandidat, jumlahSuara, totalSuaraKandidat);
         }
     </script>
 </body>
