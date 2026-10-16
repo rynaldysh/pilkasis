@@ -8,73 +8,93 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center py-10 px-4 relative">
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-6 px-4 lg:px-8 relative">
 
-    <!-- EFEK LAYAR PEMILIHAN DITUTUP (Realtime dari Kontrol) -->
-    <div id="overlay-tutup-dashboard" class="hidden fixed inset-0 bg-red-900/90 backdrop-blur-md z-50 flex-col items-center justify-center p-8 text-center text-white transition-all duration-300">
-        <span class="text-8xl mb-4 animate-bounce">🚨</span>
-        <h1 class="text-5xl font-extrabold mb-3 tracking-wider">VOTING TELAH DITUTUP</h1>
-        <p class="text-xl font-medium max-w-lg text-red-100 mb-6">Panitia telah mengunci bilik suara dari panel kontrol pusat. Grafik di bawah ini adalah hasil perolehan suara akhir.</p>
-        <div class="bg-white/20 border border-white/30 px-8 py-3 rounded-xl font-bold text-lg shadow-lg">
-            🔒 Live Count Dikunci Panitia
-        </div>
+    <!-- EFEK LAYAR PEMENANG (Muncul Otomatis Saat Voting Ditutup) -->
+    <div id="overlay-tutup-dashboard" class="hidden fixed inset-0 bg-gray-900/95 backdrop-blur-md z-50 flex-col items-center justify-center p-8 text-center text-white transition-all duration-500 overflow-y-auto">
+        <!-- Konten Pengumuman Pemenang -->
     </div>
 
     <!-- LAYAR LOGIN -->
-    <div id="login-screen" class="flex flex-col items-center justify-center w-full max-w-sm mt-20">
-        <div class="bg-white p-8 rounded-2xl shadow-xl w-full text-center border-t-8 border-emerald-500">
+    <div id="login-screen" class="flex flex-col items-center justify-center w-full max-w-sm mt-20 z-10">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full text-center border-t-8 border-emerald-500">
             <h2 class="text-2xl font-extrabold mb-2 text-gray-800">Akses Terkunci</h2>
             <p class="text-gray-500 text-sm mb-6">Masukkan kata sandi panitia untuk melihat Live Count.</p>
             
-            <input type="password" id="password-input" class="shadow border border-gray-300 rounded-lg w-full py-3 px-4 text-gray-700 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center" placeholder="Kata Sandi...">
+            <input type="password" id="password-input" class="shadow-inner border border-gray-300 rounded-xl w-full py-3 px-4 text-gray-700 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center" placeholder="Kata Sandi...">
             
-            <button id="btn-login" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg w-full transition duration-300">Buka Dashboard</button>
+            <button id="btn-login" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl w-full transition duration-300 shadow-md">Buka Dashboard</button>
             <p id="error-msg" class="text-red-500 text-sm mt-3 hidden font-semibold">Kata sandi salah!</p>
             
-            <a href="index.html" class="block mt-6 text-emerald-600 hover:text-emerald-800 text-sm">&larr; Kembali ke Menu Utama</a>
+            <a href="index.html" class="block mt-6 text-emerald-600 hover:text-emerald-800 text-sm font-medium">&larr; Kembali ke Menu Utama</a>
         </div>
     </div>
 
-    <!-- KONTEN UTAMA -->
-    <div id="main-content" class="hidden w-full max-w-4xl flex-col items-center">
-        <div class="w-full mb-4">
-            <button id="btn-keluar" class="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium transition cursor-pointer">
-                <span>&larr;</span> Kembali & Keluar (Logout)
+    <!-- KONTEN UTAMA: LAYOUT LANDSCAPE (MAX-WIDTH 1500px) -->
+    <div id="main-content" class="hidden w-full max-w-[1500px] flex-col items-center">
+        
+        <!-- HEADER GLOBAL TUNGGAL -->
+        <div class="w-full mb-6 bg-white p-5 rounded-3xl shadow-md border-b-4 border-blue-500 relative flex items-center justify-center">
+            <button id="btn-keluar" class="absolute left-6 text-blue-600 hover:text-blue-800 font-bold transition flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-full text-sm">
+                <span>&larr;</span> Keluar
             </button>
+            <div class="text-center">
+                <h1 class="text-3xl lg:text-4xl font-black text-gray-800 tracking-tight uppercase">📊 Hasil Live Count PILKASIS</h1>
+                <p class="text-gray-500 mt-1 font-bold tracking-widest text-sm">SMK PANCASILA 1 KUTOARJO</p>
+            </div>
         </div>
 
-        <div class="bg-white p-8 rounded-2xl shadow-xl w-full">
-            <h1 class="text-3xl font-extrabold mb-2 text-center text-gray-800">📊 Hasil Live Count PILKASIS</h1>
-            <p class="text-center text-gray-500 mb-8 font-semibold text-lg tracking-wide">SMK Pancasila 1 Kutoarjo</p>
+        <!-- GRID UTAMA DIBAGI 2 SISI (KIRI & KANAN) -->
+        <div class="flex flex-col lg:flex-row w-full gap-6 items-stretch">
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                <div class="bg-blue-50 border border-blue-200 p-5 rounded-xl text-center shadow-sm">
-                    <h3 class="text-xs font-bold text-blue-800 uppercase tracking-wider">Total Terdaftar (DPT)</h3>
-                    <p id="stat-total" class="text-4xl font-extrabold text-blue-600 mt-2">...</p>
-                    <p class="text-xs text-blue-500 mt-1">Siswa & Guru</p>
+            <!-- ====== SISI KIRI: STATS & GRAFIK (Lebar 35%) ====== -->
+            <div class="w-full lg:w-4/12 flex flex-col gap-6">
+                
+                <!-- KOTAK STATISTIK DPT -->
+                <div class="bg-white p-6 rounded-3xl shadow-lg border border-gray-100 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500"></div>
+                    <h2 class="text-lg font-black mb-5 text-gray-800 text-center uppercase tracking-wide">Partisipasi Pemilih</h2>
+                    
+                    <!-- Total DPT -->
+                    <div class="bg-blue-50 border-l-8 border-blue-500 p-4 rounded-2xl text-center shadow-sm mb-4">
+                        <h3 class="text-[11px] font-bold text-blue-800 uppercase tracking-widest mb-1">Total Terdaftar (DPT)</h3>
+                        <p id="stat-total" class="text-4xl font-black text-blue-600">...</p>
+                    </div>
+                    
+                    <!-- Masuk & Sisa (Berdampingan) -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-emerald-50 border-l-8 border-emerald-500 p-3 rounded-2xl text-center shadow-sm">
+                            <h3 class="text-[10px] font-bold text-emerald-800 uppercase tracking-widest mb-1">Suara Masuk</h3>
+                            <p id="stat-masuk" class="text-3xl font-black text-emerald-600">...</p>
+                        </div>
+                        <div class="bg-red-50 border-l-8 border-red-500 p-3 rounded-2xl text-center shadow-sm">
+                            <h3 class="text-[10px] font-bold text-red-800 uppercase tracking-widest mb-1">Belum Memilih</h3>
+                            <p id="stat-sisa" class="text-3xl font-black text-red-600">...</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-xl text-center shadow-sm">
-                    <h3 class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Sudah Memilih</h3>
-                    <p id="stat-masuk" class="text-4xl font-extrabold text-emerald-600 mt-2">...</p>
-                    <p class="text-xs text-emerald-500 mt-1">Suara Masuk</p>
+
+                <!-- KOTAK GRAFIK PIE CHART -->
+                <div class="bg-white p-6 rounded-3xl shadow-lg border border-gray-100 flex-grow flex flex-col">
+                    <h2 class="text-lg font-black mb-2 text-gray-800 text-center uppercase tracking-wide">Distribusi Suara</h2>
+                    <!-- Wadah Grafik Fleksibel -->
+                    <div class="w-full flex-grow min-h-[250px] lg:min-h-[300px] relative flex justify-center items-center">
+                        <canvas id="polingChart"></canvas>
+                    </div>
                 </div>
-                <div class="bg-red-50 border border-red-200 p-5 rounded-xl text-center shadow-sm">
-                    <h3 class="text-xs font-bold text-red-800 uppercase tracking-wider">Belum Memilih</h3>
-                    <p id="stat-sisa" class="text-4xl font-extrabold text-red-600 mt-2">...</p>
-                    <p class="text-xs text-red-500 mt-1">Sisa Pemilih</p>
+
+            </div>
+
+            <!-- ====== SISI KANAN: RINCIAN PASLON & FOTO (Lebar 65%) ====== -->
+            <div class="w-full lg:w-8/12 bg-white p-6 lg:p-8 rounded-3xl shadow-lg border border-gray-100 flex flex-col">
+                <h2 class="text-xl font-black mb-6 text-gray-800 text-center uppercase tracking-widest border-b-2 border-gray-100 pb-4">Kartu Perolehan Paslon</h2>
+                
+                <!-- Kotak Warna Paslon Berjejer -->
+                <div id="display-realtime" class="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 flex-grow">
+                    <p class="text-gray-400 italic col-span-3 text-center text-lg mt-10">Menyambungkan ke database...</p>
                 </div>
             </div>
 
-            <div class="w-full mb-10 flex justify-center h-[400px]">
-                <canvas id="polingChart"></canvas>
-            </div>
-
-            <div class="border-t border-gray-200 pt-6">
-                <h2 class="text-xl font-bold mb-4 text-gray-700">Rincian Perolehan Kandidat:</h2>
-                <div id="display-realtime" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <p class="text-gray-400 italic">Menyambungkan ke database...</p>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -88,42 +108,87 @@
 
         Chart.register(ChartDataLabels);
         let chartInstance = null;
+        let isOverlayDismissed = false; 
 
-        // --- SISTEM LOGIN & LOGOUT OTOMATIS ---
+        // --- SISTEM LOGIN & LOGOUT ---
         const passBenar = "pilkasis2026";
         
         document.getElementById('btn-login').addEventListener('click', () => {
             const input = document.getElementById('password-input').value;
-            if (input === passBenar) {
-                sessionStorage.setItem('authDashboard', 'true');
-                mulaiSistem();
-            } else {
-                document.getElementById('error-msg').classList.remove('hidden');
-            }
+            if (input === passBenar) { sessionStorage.setItem('authDashboard', 'true'); mulaiSistem(); } 
+            else { document.getElementById('error-msg').classList.remove('hidden'); }
         });
 
-        if (sessionStorage.getItem('authDashboard') === 'true') {
-            mulaiSistem();
-        }
+        if (sessionStorage.getItem('authDashboard') === 'true') mulaiSistem();
 
         document.getElementById('btn-keluar').addEventListener('click', () => {
-            sessionStorage.removeItem('authDashboard');
-            window.location.href = 'index.html'; 
+            sessionStorage.removeItem('authDashboard'); window.location.href = 'index.html'; 
         });
 
-        window.addEventListener('beforeunload', () => {
-            sessionStorage.removeItem('authDashboard');
-        });
-
-        // FUNGSI CEK STATUS DARI TABEL PENGATURAN
+        // --- FUNGSI CEK STATUS DAN PENGUMUMAN PEMENANG ---
         async function cekStatusDashboard() {
-            let { data, error } = await supabase.from('pengaturan').select('status_voting').eq('id', 1).single();
+            let { data: config } = await supabase.from('pengaturan').select('status_voting').eq('id', 1).single();
             const overlay = document.getElementById('overlay-tutup-dashboard');
             
-            if (data && data.status_voting === false) {
-                overlay.classList.remove('hidden');
-                overlay.classList.add('flex');
+            if (config && config.status_voting === false) {
+                if (!isOverlayDismissed) {
+                    let { data: polingData } = await supabase.from('poling').select('*').order('jumlah_suara', { ascending: false });
+                    
+                    if (polingData && polingData.length > 0) {
+                        let topVote = polingData[0].jumlah_suara;
+                        let winners = polingData.filter(k => k.jumlah_suara === topVote);
+                        
+                        let kontenHTML = '';
+                        
+                        if (topVote === 0) {
+                            kontenHTML = `<span class="text-7xl mb-4 animate-pulse">🚨</span><h1 class="text-5xl font-extrabold mb-3">VOTING DITUTUP</h1><p class="text-xl">Belum ada suara yang masuk sama sekali.</p>`;
+                        } else if (winners.length > 1) {
+                            kontenHTML = `<span class="text-7xl mb-4 animate-bounce">⚖️</span><h1 class="text-6xl font-extrabold mb-3 text-yellow-400">HASIL SERI!</h1><p class="text-2xl">Voting ditutup dan terdapat hasil seri dengan masing-masing <b>${topVote} Suara</b>.</p>`;
+                        } else {
+                            let w = winners[0];
+                            let noUrutStr = String(w.id).padStart(2, '0');
+                            let namaParts = w.pilihan.split('-');
+                            let nama1 = namaParts[0] ? namaParts[0].trim() : '';
+                            let nama2 = namaParts[1] ? namaParts[1].trim() : '';
+
+                            let linkFoto = '';
+                            if (w.id === 1) linkFoto = 'https://drive.google.com/thumbnail?id=1yHj-ZN7A-J_WG8imAUFeA2vwq-nuFNA7&sz=w800';
+                            else if (w.id === 2) linkFoto = 'https://drive.google.com/thumbnail?id=1rFaXCXxmKW-Jihnyd-ALIQSpbWmP3WZZ&sz=w800';
+                            else if (w.id === 3) linkFoto = 'https://drive.google.com/thumbnail?id=10DHUITyym8QC73coojNr1aTsleK66ydN&sz=w800';
+
+                            kontenHTML = `
+                                <div class="animate-bounce text-8xl mb-6 drop-shadow-xl mt-10">🏆</div>
+                                <h1 class="text-5xl md:text-6xl font-black mb-4 text-yellow-400 drop-shadow-lg tracking-widest uppercase">Selamat Kepada Pemenang!</h1>
+                                <p class="text-xl text-gray-300 mb-10 font-medium">Pemilihan Ketua & Wakil Ketua OSIS Periode 2026/2027 Resmi Ditutup</p>
+                                
+                                <div class="bg-white text-gray-900 p-8 rounded-3xl shadow-2xl max-w-md w-full mx-auto transform transition-all hover:scale-105 border-4 border-yellow-400 relative">
+                                    <div class="absolute -top-6 -right-6 bg-yellow-400 text-yellow-900 font-black text-3xl w-16 h-16 rounded-full flex items-center justify-center border-4 border-white shadow-xl">0${w.id}</div>
+                                    <img src="${linkFoto}" class="w-full max-h-[350px] object-contain rounded-2xl mb-6 bg-gray-50 p-2 border border-gray-100" alt="Foto Pemenang">
+                                    <h2 class="text-3xl font-black leading-tight text-gray-800">${nama1}</h2>
+                                    <h3 class="text-xl font-bold leading-tight text-gray-600 mt-2">${nama2}</h3>
+                                    
+                                    <div class="mt-6 bg-yellow-50 border-2 border-yellow-300 rounded-2xl py-4 shadow-inner">
+                                        <p class="text-sm font-bold text-yellow-700 uppercase tracking-widest mb-1">Total Perolehan Akhir</p>
+                                        <p class="text-6xl font-black text-yellow-600">${w.jumlah_suara} <span class="text-lg font-bold text-yellow-700">SUARA</span></p>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        kontenHTML += `<button id="btn-tutup-overlay" class="mt-10 bg-gray-800 hover:bg-black border border-gray-600 text-white font-bold py-4 px-10 text-lg rounded-full shadow-lg transition duration-300">Lihat Detail Grafik & Angka</button>`;
+                        overlay.innerHTML = kontenHTML;
+
+                        document.getElementById('btn-tutup-overlay').addEventListener('click', () => {
+                            isOverlayDismissed = true;
+                            overlay.classList.remove('flex');
+                            overlay.classList.add('hidden');
+                        });
+                    }
+                    overlay.classList.remove('hidden');
+                    overlay.classList.add('flex');
+                }
             } else {
+                isOverlayDismissed = false; 
                 overlay.classList.remove('flex');
                 overlay.classList.add('hidden');
             }
@@ -137,40 +202,32 @@
             cekStatusDashboard();
             renderData();
 
-            // Mendengarkan perubahan real-time pada poling, dpt_pemilih, dan pengaturan
             supabase.channel('pantau-semua-dashboard')
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'poling' }, () => {
-                renderData();
-            })
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'dpt_pemilih' }, () => {
-                renderData();
-            })
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pengaturan' }, (payload) => {
-                // Efek langsung muncul/hilang secara real-time tanpa refresh
-                cekStatusDashboard();
-            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'poling' }, () => { renderData(); })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'dpt_pemilih' }, () => { renderData(); })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'pengaturan' }, () => { cekStatusDashboard(); })
             .subscribe();
         }
 
-        // --- FUNGSI GRAFIK ---
+        // --- FUNGSI GRAFIK PIE CHART ---
         function updateChart(namaKandidat, jumlahSuara, totalSeluruhSuara) {
             const ctx = document.getElementById('polingChart').getContext('2d');
-            const backgroundColors = ['rgba(59, 130, 246, 0.85)', 'rgba(16, 185, 129, 0.85)', 'rgba(245, 158, 11, 0.85)', 'rgba(239, 68, 68, 0.85)'];
+            const backgroundColors = ['rgba(59, 130, 246, 0.95)', 'rgba(16, 185, 129, 0.95)', 'rgba(245, 158, 11, 0.95)']; // Biru, Hijau, Kuning
 
             if (!chartInstance) {
                 chartInstance = new Chart(ctx, {
                     type: 'pie',
-                    data: {
-                        labels: namaKandidat,
-                        datasets: [{ data: jumlahSuara, backgroundColor: backgroundColors, borderWidth: 2, borderColor: '#ffffff', hoverOffset: 10 }]
-                    },
+                    data: { labels: namaKandidat, datasets: [{ data: jumlahSuara, backgroundColor: backgroundColors, borderWidth: 4, borderColor: '#ffffff', hoverOffset: 12 }] },
                     options: {
-                        responsive: true, maintainAspectRatio: false,
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        layout: { padding: 15 },
                         animation: { animateRotate: true, animateScale: true, duration: 800, easing: 'easeOutQuart' },
                         plugins: {
-                            legend: { position: 'bottom', labels: { padding: 20, font: { size: 14, weight: 'bold' } } },
+                            legend: { display: false }, // Legenda tetap mati
                             datalabels: {
-                                color: '#ffffff', font: { weight: 'bold', size: 16 },
+                                color: '#ffffff', font: { weight: 'bold', size: 24 },
+                                textStrokeColor: 'rgba(0,0,0,0.4)', textStrokeWidth: 4,
                                 formatter: (value, context) => {
                                     let dataArr = context.chart.data.datasets[0].data;
                                     let totalDinamis = dataArr.reduce((a, b) => a + b, 0);
@@ -182,9 +239,7 @@
                     }
                 });
             } else {
-                chartInstance.data.labels = namaKandidat; 
-                chartInstance.data.datasets[0].data = jumlahSuara; 
-                chartInstance.update();
+                chartInstance.data.labels = namaKandidat; chartInstance.data.datasets[0].data = jumlahSuara; chartInstance.update();
             }
         }
 
@@ -201,24 +256,65 @@
 
             let { data: polingData, error: polingErr } = await supabase.from('poling').select('*').order('id', { ascending: true })
             const out = document.getElementById('display-realtime')
-            
             if(polingErr) return out.innerHTML = `<p class="text-red-500 col-span-3">Gagal mengambil data kandidat: ${polingErr.message}</p>`;
 
             const namaKandidat = [], jumlahSuara = []; let totalSuaraKandidat = 0;
             polingData.forEach(k => { totalSuaraKandidat += k.jumlah_suara; });
 
-            out.innerHTML = polingData.map(k => {
-                namaKandidat.push(k.pilihan); jumlahSuara.push(k.jumlah_suara);
+            // Tema Warna Kartu Kanan
+            const cardBgs = ['bg-blue-100', 'bg-emerald-100', 'bg-amber-100'];
+            const cardBorders = ['border-blue-500', 'border-emerald-500', 'border-amber-500'];
+            const badgeBgs = ['bg-blue-600', 'bg-emerald-600', 'bg-amber-600'];
+            const scoreColors = ['text-blue-700', 'text-emerald-700', 'text-amber-700'];
+            const pillBgs = ['bg-blue-200 text-blue-900', 'bg-emerald-200 text-emerald-900', 'bg-amber-200 text-amber-900'];
+
+            out.innerHTML = polingData.map((k, index) => {
+                let namaParts = k.pilihan.split('-');
+                let nama1 = namaParts[0] ? namaParts[0].trim() : '';
+                let nama2 = namaParts[1] ? namaParts[1].trim() : '';
+
+                namaKandidat.push(nama1); 
+                jumlahSuara.push(k.jumlah_suara);
                 let persentase = totalSuaraKandidat === 0 ? "0.0" : ((k.jumlah_suara / totalSuaraKandidat) * 100).toFixed(1);
 
+                let bgCard = cardBgs[index % cardBgs.length];
+                let borderCard = cardBorders[index % cardBorders.length];
+                let bgBadge = badgeBgs[index % badgeBgs.length];
+                let colorScore = scoreColors[index % scoreColors.length];
+                let bgPill = pillBgs[index % pillBgs.length];
+
+                let linkFotoCard = '';
+                if (k.id === 1) linkFotoCard = 'https://drive.google.com/thumbnail?id=1yHj-ZN7A-J_WG8imAUFeA2vwq-nuFNA7&sz=w600';
+                else if (k.id === 2) linkFotoCard = 'https://drive.google.com/thumbnail?id=1rFaXCXxmKW-Jihnyd-ALIQSpbWmP3WZZ&sz=w600';
+                else if (k.id === 3) linkFotoCard = 'https://drive.google.com/thumbnail?id=10DHUITyym8QC73coojNr1aTsleK66ydN&sz=w600';
+
                 return `
-                    <div class="flex flex-col items-center bg-gray-50 p-4 rounded-xl border border-gray-200 shadow-sm transition-all transform hover:-translate-y-1">
-                        <span class="text-lg font-bold text-gray-700 text-center mb-1">${k.pilihan}</span>
-                        <div class="flex items-baseline gap-2 my-2">
-                            <span class="text-3xl font-extrabold text-blue-600">${k.jumlah_suara}</span>
-                            <span class="text-sm font-medium text-gray-500">Suara</span>
+                    <div class="flex flex-col items-center justify-between ${bgCard} p-5 lg:p-6 rounded-3xl border-t-8 ${borderCard} shadow-md h-full">
+                        
+                        <!-- BADGE NOMOR -->
+                        <div class="w-full flex justify-center mb-4">
+                            <span class="${bgBadge} text-white font-black px-6 py-1.5 rounded-full text-xs tracking-widest shadow-md">PASLON 0${k.id}</span>
                         </div>
-                        <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">${persentase}% dari total</div>
+
+                        <!-- FOTO POSTER -->
+                        <div class="w-full mb-4">
+                            <img src="${linkFotoCard}" alt="Foto Paslon" class="w-full h-[200px] xl:h-[260px] object-contain rounded-xl bg-white p-2 border border-white shadow-sm">
+                        </div>
+
+                        <!-- NAMA 2 BARIS -->
+                        <div class="text-center mb-3 min-h-[50px] flex flex-col justify-center">
+                            <span class="text-lg xl:text-xl font-extrabold text-gray-900 leading-tight">${nama1}</span>
+                            ${nama2 ? `<span class="text-sm xl:text-base font-bold text-gray-700 leading-tight mt-1">${nama2}</span>` : ''}
+                        </div>
+                        
+                        <!-- SKOR SUARA -->
+                        <div class="flex items-baseline gap-2 my-1 mt-auto">
+                            <span class="text-4xl xl:text-5xl font-black ${colorScore} drop-shadow-sm">${k.jumlah_suara}</span>
+                            <span class="text-sm font-bold text-gray-700">Suara</span>
+                        </div>
+                        
+                        <!-- PERSENTASE -->
+                        <div class="${bgPill} px-3 py-2 mt-4 rounded-xl text-sm font-black w-full text-center shadow-inner tracking-widest">${persentase}%</div>
                     </div>`
             }).join('')
 
